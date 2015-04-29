@@ -2,12 +2,9 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.io import loadmat
 from math import sqrt
+from sklearn.svm import SVC
 
 def preprocess():
-
-    # MAT file path
-    mat_file_path = './mnist_all.mat'
-
     """ 
      Input:
      Although this function doesn't have any input, you are required to load
@@ -36,21 +33,14 @@ def preprocess():
      - feature selection
     """
     
-    mat = loadmat(mat_file_path); #loads the MAT object as a Dictionary
+    mat = loadmat('/home/csgrad/hharwani/mnist_all.mat'); #loads the MAT object as a Dictionary
     
     n_feature = mat.get("train1").shape[1];
     n_sample = 0;
     for i in range(10):
         n_sample = n_sample + mat.get("train"+str(i)).shape[0];
-    
-    # Sizes of the validation and training data sets
     n_validation = 1000;
     n_train = n_sample - 10*n_validation;
-
-    ######################## Remove this when testing on metallica
-    n_validation = 50;
-    n_train = 1000;
-    n_testdata = 100;
     
     # Construct validation data
     validation_data = np.zeros((10*n_validation,n_feature));
@@ -68,10 +58,6 @@ def preprocess():
     temp = 0;
     for i in range(10):
         size_i = mat.get("train"+str(i)).shape[0];
-        
-        ######################## Remove this when testing on metallica
-        size_i = n_train/10;
-        
         train_data[temp:temp+size_i-n_validation,:] = mat.get("train"+str(i))[n_validation:size_i,:];
         train_label[temp:temp+size_i-n_validation,:] = i*np.ones((size_i-n_validation,1));
         temp = temp+size_i-n_validation;
@@ -85,10 +71,6 @@ def preprocess():
     temp = 0;
     for i in range(10):
         size_i = mat.get("test"+str(i)).shape[0];
-
-        ######################## Remove this when testing on metallica
-        size_i = n_testdata;
-        
         test_data[temp:temp+size_i,:] = mat.get("test"+str(i));
         test_label[temp:temp+size_i,:] = i*np.ones((size_i,1));
         temp = temp + size_i;
@@ -194,15 +176,15 @@ for i in range(n_class):
 
 # Find the accuracy on Training Dataset
 predicted_label = blrPredict(W, train_data);
-print('\n Training set accuracy:' + str(100*np.mean((predicted_label == train_label).astype(float))) + '%')
+print('\n Training set Accuracy:' + str(100*np.mean((predicted_label == train_label).astype(float))) + '%')
 
 # Find the accuracy on Validation Dataset
 predicted_label = blrPredict(W, validation_data);
-print('\n Validation set accuracy:' + str(100*np.mean((predicted_label == validation_label).astype(float))) + '%')
+print('\n Validation set Accuracy:' + str(100*np.mean((predicted_label == validation_label).astype(float))) + '%')
 
 # Find the accuracy on Testing Dataset
 predicted_label = blrPredict(W, test_data);
-print('\n Testing set accuracy:' + str(100*np.mean((predicted_label == test_label).astype(float))) + '%')
+print('\n Testing set Accuracy:' + str(100*np.mean((predicted_label == test_label).astype(float))) + '%')
 
 """
 Script for Support Vector Machine
@@ -212,4 +194,42 @@ print('\n\n--------------SVM-------------------\n\n')
 ##################
 # YOUR CODE HERE #
 ##################
+train_label= train_label.reshape(train_label.shape[0]) 
+test_label= test_label.reshape(test_label.shape[0]) 
+validation_label= validation_label.reshape(validation_label.shape[0]) 
 
+print('\n\n Accuracy in case of linear kernel and all other parameters as default\n\n') 
+clf = SVC( kernel='linear') 
+clf.fit(train_data, train_label) 
+print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 
+print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 
+print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%') 
+
+print('\n\n Accuracy in case of rbf kernel and gamma value 1 and all other parameters as default\n\n')
+clf = SVC( kernel='rbf', gamma=1.0) 
+clf.fit(train_data, train_label)
+print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 
+print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 
+print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%') 
+
+print('\n\n Accuracy in case of rbf kernel and gamma value default and all other parameters as default\n\n')
+clf = SVC( kernel='rbf')
+clf.fit(train_data, train_label) 
+print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 
+print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 
+print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%')
+
+print('\n\n Accuracy in case of rbf kernel and gamma value default and c=1 and all other parameters as default\n\n')
+clf = SVC( kernel='rbf',C=1)
+clf.fit(train_data, train_label) 
+print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 
+print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 
+print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%')
+
+for i in range(10,110,10):
+     clf = SVC( kernel='rbf', C = i) 
+     clf.fit(train_data, train_label)
+     print('\n\n Accuracy in case of rbf kernel and gamma value default and C value='+i+'\n\n')
+     print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 
+     print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 
+     print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%') 
