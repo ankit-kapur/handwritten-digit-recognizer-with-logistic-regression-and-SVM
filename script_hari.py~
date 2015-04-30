@@ -2,6 +2,7 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.io import loadmat
 from sklearn.svm import SVC
+import pickle
 
 def preprocess():
      # MAT file path
@@ -114,11 +115,6 @@ def blrObjFunction(params, *args):
         error_grad: the vector of size (D+1) x 1 representing the gradient of
                     error function
     """
-    #initialWeights, train_data, labeli = args
-    
-    #print initialWeights.shape #716x1
-    #print labeli.shape #50000x1
-    #print train_data.shape #50000 x 715
     n_data = train_data.shape[0];
     n_feature = train_data.shape[1];
     error = 0;
@@ -128,61 +124,13 @@ def blrObjFunction(params, *args):
     train_data_with_bias = np.append(ones, train_data, axis=1)
     
     y = sigmoid(np.dot(train_data_with_bias, params))
-    #logoneminusi = np.log(np.subtract(1, y))
-    #oneminuslabeli = np.subtract(1, labeli)
     error1 = np.dot(np.transpose(labeli), np.log(y))
-    #print "error.shape"
-    #print error1.shape
     error2 = np.dot(np.transpose(np.subtract(1, labeli)), np.log(np.subtract(1, y)))
-    #print error2.shape  
-    error = np.add(error1.flatten(), error2.flatten())
-    #print error.shape   
-    
+    error = np.add(error1.flatten(), error2.flatten())    
     error_grad = np.dot(np.transpose(train_data_with_bias) ,(np.subtract(y, labeli)))
-    #error_grad = error_grad.flatten()
 
     error_grad = error_grad.reshape(error_grad.shape[0])
-    
-    #print type(error_grad)
-    #print error_grad.shape
-    
-    
-            
-    #a = np.array([[0,1,2,5],[0,5,2,8], [0,5,2,1]])
-    #b = np.ones((3,1))
-    #print a
-    #print b
-    #c = np.append(b, a, axis=1)
-    #print c
-    #
-    #
-    #print initialWeights.shape
-    
-    
-    #print n_data
-    #print n_feature
-    #print error
-    #print error_grad
-    #print "------------------------------------------------"
-    
-    #calc y = sigma(wtx)
-    #print initialWeights.shape #716x1
-    #print labeli.shape #50000x1
-    #print train_data.shape #50000 x 715
-    
-    #p(t|w)
-    #wTranspose = np.transpose(initialWeights)
-    #wTransposeX = np.multiply(wTranspose, train_data)
-    #sigmoidOfwTransposeX = sigmoid(wTransposeX)
-    #
-    #for p(t|w)
-    
-   #likelihoodFunc = np.multiply(
-    
-    ##################
-    # YOUR CODE HERE #
-    ##################
-    
+        
     return error, error_grad
 
 def blrPredict(W, data):
@@ -201,31 +149,25 @@ def blrPredict(W, data):
 
     """
     label = np.zeros((data.shape[0],1));
-    print label.shape
     ones = np.ones((data.shape[0], 1))
     X_with_bias = np.append(ones, data, axis=1)
-    print X_with_bias.shape
     
     Y = sigmoid(np.dot(X_with_bias, W))
     label = np.argmax(Y, axis=1)
-    print label.shape
+
     #label = label.reshape((data.shape[0],1))
     label = label.flatten()
-    print "SUM : ", np.sum(label)
-    print label.shape
     
-    ##################
-    # YOUR CODE HERE #
-    ##################
-
     return label
 
 
 """
 Script for Logistic Regression
 """
+# Pickle file: Open it for writing
+pickle_file = open('params.pickle','wb') 
+
 train_data, train_label, validation_data,validation_label, test_data, test_label = preprocess();
-print "train_data", np.sum(train_data)
 
 # number of classes
 n_class = 10;
@@ -251,7 +193,7 @@ for i in range(n_class):
     W[:,i] = nn_params.x.reshape((n_feature+1,));
     
 print "np.sum(W): ", np.sum(W)
-print "labeli: ", np.sum(labeli)
+print "np.sum(labeli): ", np.sum(labeli)
 # Find the accuracy on Training Dataset
 predicted_label = blrPredict(W, train_data);
 print('\n Training set Accuracy:' + str(100*np.mean((predicted_label == train_label).astype(float))) + '%')
@@ -269,9 +211,7 @@ Script for Support Vector Machine
 """
 
 print('\n\n--------------SVM-------------------\n\n')
-##################
-# YOUR CODE HERE #
-##################
+'''
 train_label= train_label.reshape(train_label.shape[0])	
 test_label= test_label.reshape(test_label.shape[0]) 		
 validation_label= validation_label.reshape(validation_label.shape[0]) 		
@@ -311,3 +251,12 @@ for i in range(10,110,10):
      print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 		
      print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 		
      print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%')
+'''
+
+# Dump everything into the file
+pickle.dump([W], pickle_file)
+
+# Close the pickle file
+pickle_file.close()
+print("\nTotal time: ", (time.time() - overall_start_time)/60)
+print("\n-------------------- End of code ------------------")

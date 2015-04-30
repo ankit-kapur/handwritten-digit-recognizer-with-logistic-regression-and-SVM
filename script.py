@@ -1,10 +1,13 @@
 import numpy as np
 from scipy.optimize import minimize
 from scipy.io import loadmat
-from math import sqrt
 from sklearn.svm import SVC
+import pickle
 
 def preprocess():
+     # MAT file path
+    mat_file_path = './mnist_all.mat'
+    
     """ 
      Input:
      Although this function doesn't have any input, you are required to load
@@ -33,7 +36,7 @@ def preprocess():
      - feature selection
     """
     
-    mat = loadmat('/home/csgrad/hharwani/mnist_all.mat'); #loads the MAT object as a Dictionary
+    mat = loadmat(mat_file_path); #loads the MAT object as a Dictionary
     
     n_feature = mat.get("train1").shape[1];
     n_sample = 0;
@@ -91,6 +94,7 @@ def preprocess():
     test_data = test_data/255.0;
     
     return train_data, train_label, validation_data, validation_label, test_data, test_label
+    
 
 def sigmoid(z):
     return 1.0/(1.0 + np.exp(-z));
@@ -115,11 +119,18 @@ def blrObjFunction(params, *args):
     n_feature = train_data.shape[1];
     error = 0;
     error_grad = np.zeros((n_feature+1,1));
+     
+    ones = np.ones((n_data, 1))
+    train_data_with_bias = np.append(ones, train_data, axis=1)
     
-    ##################
-    # YOUR CODE HERE #
-    ##################
-    
+    y = sigmoid(np.dot(train_data_with_bias, params))
+    error1 = np.dot(np.transpose(labeli), np.log(y))
+    error2 = np.dot(np.transpose(np.subtract(1, labeli)), np.log(np.subtract(1, y)))
+    error = np.add(error1.flatten(), error2.flatten())    
+    error_grad = np.dot(np.transpose(train_data_with_bias) ,(np.subtract(y, labeli)))
+
+    error_grad = error_grad.reshape(error_grad.shape[0])
+        
     return error, error_grad
 
 def blrPredict(W, data):
@@ -138,17 +149,24 @@ def blrPredict(W, data):
 
     """
     label = np.zeros((data.shape[0],1));
+    ones = np.ones((data.shape[0], 1))
+    X_with_bias = np.append(ones, data, axis=1)
     
-    ##################
-    # YOUR CODE HERE #
-    ##################
+    Y = sigmoid(np.dot(X_with_bias, W))
+    label = np.argmax(Y, axis=1)
 
+    #label = label.reshape((data.shape[0],1))
+    label = label.flatten()
+    
     return label
 
 
 """
 Script for Logistic Regression
 """
+# Pickle file: Open it for writing
+pickle_file = open('params.pickle','wb') 
+
 train_data, train_label, validation_data,validation_label, test_data, test_label = preprocess();
 
 # number of classes
@@ -173,7 +191,9 @@ for i in range(n_class):
     args = (train_data, labeli);
     nn_params = minimize(blrObjFunction, initialWeights, jac=True, args=args,method='CG', options=opts)
     W[:,i] = nn_params.x.reshape((n_feature+1,));
-
+    
+print "np.sum(W): ", np.sum(W)
+print "np.sum(labeli): ", np.sum(labeli)
 # Find the accuracy on Training Dataset
 predicted_label = blrPredict(W, train_data);
 print('\n Training set Accuracy:' + str(100*np.mean((predicted_label == train_label).astype(float))) + '%')
@@ -191,45 +211,52 @@ Script for Support Vector Machine
 """
 
 print('\n\n--------------SVM-------------------\n\n')
-##################
-# YOUR CODE HERE #
-##################
-train_label= train_label.reshape(train_label.shape[0]) 
-test_label= test_label.reshape(test_label.shape[0]) 
-validation_label= validation_label.reshape(validation_label.shape[0]) 
+'''
+train_label= train_label.reshape(train_label.shape[0])	
+test_label= test_label.reshape(test_label.shape[0]) 		
+validation_label= validation_label.reshape(validation_label.shape[0]) 		
+print('\n\n Accuracy in case of linear kernel and all other parameters as default\n\n') 		
 
-print('\n\n Accuracy in case of linear kernel and all other parameters as default\n\n') 
-clf = SVC( kernel='linear') 
-clf.fit(train_data, train_label) 
-print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 
-print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 
-print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%') 
+clf = SVC( kernel='linear') 		
+clf.fit(train_data, train_label) 		
+print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 		
+print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 		
+print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%') 		
+print('\n\n Accuracy in case of rbf kernel and gamma value 1 and all other parameters as default\n\n')		
 
-print('\n\n Accuracy in case of rbf kernel and gamma value 1 and all other parameters as default\n\n')
-clf = SVC( kernel='rbf', gamma=1.0) 
-clf.fit(train_data, train_label)
-print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 
-print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 
-print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%') 
+clf = SVC( kernel='rbf', gamma=1.0) 		
+clf.fit(train_data, train_label)		
+print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 		
+print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 		
+print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%') 		
+print('\n\n Accuracy in case of rbf kernel and gamma value default and all other parameters as default\n\n')		
 
-print('\n\n Accuracy in case of rbf kernel and gamma value default and all other parameters as default\n\n')
-clf = SVC( kernel='rbf')
-clf.fit(train_data, train_label) 
-print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 
-print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 
-print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%')
+clf = SVC( kernel='rbf')		
+clf.fit(train_data, train_label) 		
+print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 		
+print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 		
+print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%')		
+print('\n\n Accuracy in case of rbf kernel and gamma value default and c=1 and all other parameters as default\n\n')		
 
-print('\n\n Accuracy in case of rbf kernel and gamma value default and c=1 and all other parameters as default\n\n')
-clf = SVC( kernel='rbf',C=1)
-clf.fit(train_data, train_label) 
-print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 
-print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 
-print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%')
+clf = SVC( kernel='rbf',C=1)		
+clf.fit(train_data, train_label) 		
+print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 		
+print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 		
+print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%')		
 
-for i in range(10,110,10):
-     clf = SVC( kernel='rbf', C = i) 
-     clf.fit(train_data, train_label)
-     print('\n\n Accuracy in case of rbf kernel and gamma value default and C value='+i+'\n\n')
-     print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 
-     print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 
-     print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%') 
+for i in range(10,110,10):		
+     clf = SVC( kernel='rbf', C = i) 		
+     clf.fit(train_data, train_label)		
+     print('\n\n Accuracy in case of rbf kernel and gamma value default and C value='+i+'\n\n')		
+     print('\n Training set Accuracy: ' +str(clf.score(train_data, train_label)*100) + '%') 		
+     print('\n Validation set Accuracy: ' +str(clf.score(validation_data, validation_label)*100) + '%') 		
+     print('\n Testing set Accuracy: ' +str(clf.score(test_data, test_label)*100) + '%')
+'''
+
+# Dump everything into the file
+pickle.dump([W], pickle_file)
+
+# Close the pickle file
+pickle_file.close()
+print("\nTotal time: ", (time.time() - overall_start_time)/60)
+print("\n-------------------- End of code ------------------")
